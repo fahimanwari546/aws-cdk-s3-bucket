@@ -1,16 +1,38 @@
-import * as cdk from 'aws-cdk-lib';
-import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import cloudfront = require("@aws-cdk/aws-cloudfront");
+import s3 = require("@aws-cdk/aws-s3");
+import s3deploy = require("@aws-cdk/aws-s3-deployment");
+import { Stack, App, StackProps } from "@aws-cdk/core";
+import * as origins from "@aws-cdk/aws-cloudfront-origins";
 
-export class StaticWebsiteStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
 
-    // The code that defines your stack goes here
+export class StaticSiteStack extends Stack {
+  constructor(parent: App, name: string, props: StackProps) {
+    super(parent, name, props);
+  
+  
+  // Make bucket
+  const websiteBucket = new s3.Bucket(this, 'WebsiteBucket', {
+    websiteIndexDocument: 'index.html',
+    publicReadAccess: true,
+    versioned: true,
+  });
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'StaticWebsiteQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+  // Deplyement
+  
+  new s3deploy.BucketDeployment(this, 'DeployWebsite', {
+    sources: [s3deploy.Source.asset('./build')],
+    destinationBucket: websiteBucket,
+  });
+
+// }
+       // create a CDN to deploy your website
+
+      new cloudfront.Distribution(this, "MyDistribution", {
+        defaultBehavior: {
+          origin: new origins.S3Origin(websiteBucket),
+        },
+        defaultRootObject: "index.html",
+      });
+
   }
 }
